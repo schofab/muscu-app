@@ -126,8 +126,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   background:var(--s1);border:1px solid var(--bd);border-radius:12px;
   padding:14px;
 }
-.chart-card h3{font-size:13px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
 .chart-wrap{position:relative;height:160px}
+.chart-card h3{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
 
 /* ── Weight track ────────────────────────────── */
 .weight-row{
@@ -441,8 +441,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     </div>
 
     <div class="chart-card">
+      <h3>Poids corporel</h3>
+      <div class="chart-wrap"><canvas id="chart-weight"></canvas></div>
+    </div>
+
+    <div class="chart-card">
       <h3>Répartition cette semaine</h3>
-      <div class="chart-wrap" style="height:140px"><canvas id="chart-days"></canvas></div>
+      <div class="chart-wrap"><canvas id="chart-days"></canvas></div>
     </div>
   </div>
 
@@ -655,6 +660,7 @@ let state = {
   editId: null,
   selectedGroup: null,
   chartTonnage: null,
+  chartWeight: null,
   chartDays: null,
 };
 
@@ -775,16 +781,40 @@ function renderDashboard() {
 
   // Charts
   renderTonnageChart();
+  renderWeightChart();
   renderDaysChart();
 }
 
 function getChartColors() {
-  const style = getComputedStyle(document.documentElement);
+  const s = getComputedStyle(document.documentElement);
   return {
-    ac: style.getPropertyValue('--ac').trim() || '#E5402B',
-    tx2: style.getPropertyValue('--tx2').trim() || '#8891AB',
-    s3: style.getPropertyValue('--s3').trim() || '#222638',
-    tx: style.getPropertyValue('--tx').trim() || '#E8EBF5',
+    ac:  s.getPropertyValue('--ac').trim()  || '#E5402B',
+    tx2: s.getPropertyValue('--tx2').trim() || '#8891AB',
+    s3:  s.getPropertyValue('--s3').trim()  || '#222638',
+    tx:  s.getPropertyValue('--tx').trim()  || '#E8EBF5',
+  };
+}
+
+function chartBaseOptions(c, yCallback) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1A1E2B',
+        titleColor: '#E8EBF5',
+        bodyColor: '#8891AB',
+        borderColor: '#2A2F45',
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 8,
+      }
+    },
+    scales: {
+      x: { grid:{display:false}, ticks:{color:c.tx2, font:{size:10}, maxRotation:0}, border:{display:false} },
+      y: { grid:{color:c.s3, lineWidth:1}, ticks:{color:c.tx2, font:{size:10}, callback:yCallback}, border:{display:false} }
+    }
   };
 }
 
@@ -792,7 +822,6 @@ function renderTonnageChart() {
   const ctx = document.getElementById('chart-tonnage').getContext('2d');
   const c = getChartColors();
 
-  // Build data for all weeks with known tonnage
   const labels = [], values = [], bgColors = [];
   const maxW = Math.max(...Object.keys(HISTORICAL_TONNAGE).map(Number), state.week);
   for (let i = 2; i <= maxW; i++) {
@@ -812,48 +841,63 @@ function renderTonnageChart() {
     return;
   }
 
+  const opts = chartBaseOptions(c, v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v);
+  opts.scales.x.ticks.callback = function(val, i) { return i % 4 === 0 ? this.getLabelForValue(val) : ''; };
+  opts.plugins.tooltip.callbacks = { label: ctx => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' kg' };
+
   state.chartTonnage = new Chart(ctx, {
     type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderRadius: 4, borderSkipped: false }] },
+    options: opts
+  });
+}
+
+function renderWeightChart() {
+  const ctx = document.getElementById('chart-weight').getContext('2d');
+  const c = getChartColors();
+
+  const labels = [], values = [];
+  const maxW = Math.max(...Object.keys(HISTORICAL_TONNAGE).map(Number), state.week);
+  for (let i = 1; i <= maxW; i++) {
+    const w = appData.historicalWeight[i] || (appData.weeks[String(i)] && appData.weeks[String(i)].bodyWeight) || null;
+    if (w) { labels.push('S' + i); values.push(w); }
+  }
+
+  const grad = ctx.createLinearGradient(0, 0, 0, 160);
+  grad.addColorStop(0, c.ac + '55');
+  grad.addColorStop(1, c.ac + '00');
+
+  const updateData = () => {
+    state.chartWeight.data.labels = labels;
+    state.chartWeight.data.datasets[0].data = values;
+    state.chartWeight.update('none');
+  };
+
+  if (state.chartWeight) { updateData(); return; }
+
+  const opts = chartBaseOptions(c, v => v.toFixed(0) + ' kg');
+  opts.plugins.tooltip.callbacks = { label: ctx => ' ' + ctx.parsed.y.toFixed(1) + ' kg' };
+  opts.scales.y.suggestedMin = Math.min(...values) - 2;
+  opts.scales.y.suggestedMax = Math.max(...values) + 2;
+
+  state.chartWeight = new Chart(ctx, {
+    type: 'line',
     data: {
       labels,
       datasets: [{
         data: values,
-        backgroundColor: bgColors,
-        borderRadius: 3,
-        borderSkipped: false,
+        borderColor: c.ac,
+        backgroundColor: grad,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: c.ac,
+        pointBorderColor: '#0B0D13',
+        pointBorderWidth: 1.5,
+        tension: 0.4,
+        fill: true,
       }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' kg',
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: c.tx2, font: { size: 9 }, maxRotation: 0,
-            callback: function(val, i) {
-              // Show every 4th label
-              return i % 4 === 0 ? this.getLabelForValue(val) : '';
-            }
-          },
-          border: { display: false }
-        },
-        y: {
-          grid: { color: c.s3 },
-          ticks: { color: c.tx2, font: { size: 9 },
-            callback: v => (v/1000).toFixed(0) + 'k'
-          },
-          border: { display: false }
-        }
-      }
-    }
+    options: opts
   });
 }
 
@@ -866,32 +910,21 @@ function renderDaysChart() {
 
   if (state.chartDays) {
     state.chartDays.data.datasets[0].data = values;
+    state.chartDays.data.datasets[0].backgroundColor = values.map(v => v > 0 ? c.ac : c.s3);
     state.chartDays.update('none');
     return;
   }
+
+  const opts = chartBaseOptions(c, v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v);
+  opts.plugins.tooltip.callbacks = { label: ctx => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' kg' };
 
   state.chartDays = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        data: values,
-        backgroundColor: labels.map((_, i) => values[i] > 0 ? c.ac + 'CC' : c.s3),
-        borderRadius: 4,
-        borderSkipped: false,
-      }]
+      datasets: [{ data: values, backgroundColor: values.map(v => v > 0 ? c.ac : c.s3), borderRadius: 4, borderSkipped: false }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' kg' } }
-      },
-      scales: {
-        x: { grid:{display:false}, ticks:{color:c.tx2,font:{size:11}}, border:{display:false} },
-        y: { grid:{color:c.s3}, ticks:{color:c.tx2,font:{size:9},callback:v=>(v/1000).toFixed(0)+'k'}, border:{display:false} }
-      }
-    }
+    options: opts
   });
 }
 
