@@ -332,7 +332,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .sets-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .set-input-wrap{display:flex;flex-direction:column;gap:4px;align-items:center}
 .set-input-wrap span{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em}
-.set-input-wrap input{text-align:center;padding:8px 4px}
+.set-input-wrap input,.set-input-wrap select{text-align:center;padding:8px 4px}
 .tonnage-preview{
   background:var(--s2);border-radius:10px;padding:10px 14px;
   display:flex;justify-content:space-between;align-items:center;
@@ -496,24 +496,24 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
             <div style="font-size:11px;color:var(--tx2);margin-bottom:5px;font-weight:600">S1 – S2</div>
-            <input id="ex-weight" type="number" step="0.5" min="0" max="400" placeholder="ex: 40">
+            <select id="ex-weight"></select>
           </div>
           <div>
             <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
               <span style="font-size:11px;color:var(--tx2);font-weight:600">S3 — HSR</span>
               <span style="font-size:9px;background:var(--s3);color:var(--tx2);padding:1px 5px;border-radius:4px;font-weight:700;letter-spacing:.04em">LENT</span>
             </div>
-            <input id="ex-weight-hsr" type="number" step="0.5" min="0" max="400" placeholder="ex: 32">
+            <select id="ex-weight-hsr"></select>
           </div>
         </div>
       </div>
       <div class="form-group">
         <label>Répétitions par série</label>
         <div class="sets-grid">
-          <div class="set-input-wrap"><span>S1</span><input class="set-rep" id="set1" type="number" min="0" max="99" placeholder="—"></div>
-          <div class="set-input-wrap"><span>S2</span><input class="set-rep" id="set2" type="number" min="0" max="99" placeholder="—"></div>
-          <div class="set-input-wrap"><span>S3</span><input class="set-rep" id="set3" type="number" min="0" max="99" placeholder="—"></div>
-          <div class="set-input-wrap"><span>S4</span><input class="set-rep" id="set4" type="number" min="0" max="99" placeholder="—"></div>
+          <div class="set-input-wrap"><span>S1</span><select class="set-rep" id="set1"></select></div>
+          <div class="set-input-wrap"><span>S2</span><select class="set-rep" id="set2"></select></div>
+          <div class="set-input-wrap"><span>S3</span><select class="set-rep" id="set3"></select></div>
+          <div class="set-input-wrap"><span>S4</span><select class="set-rep" id="set4"></select></div>
         </div>
       </div>
       <div class="tonnage-preview">
@@ -1107,7 +1107,7 @@ function openAddModal() {
   state.selectedGroup = null;
   document.getElementById('modal-title').textContent = 'Ajouter un exercice';
   document.getElementById('ex-selector').innerHTML = '<option value="">— Choisir un groupe d\'abord —</option>';
-  document.getElementById('ex-weight').value = '';
+  document.getElementById('ex-weight').value = 0;
   document.getElementById('ex-weight-hsr').value = '';
   ['set1','set2','set3','set4'].forEach(id => document.getElementById(id).value = '');
   updateTonnagePreview();
@@ -1125,8 +1125,8 @@ function openEditModal(id) {
   document.getElementById('modal-title').textContent = 'Modifier l\'exercice';
   renderGroupSelector();
   populateExerciseSelect(ex.group, ex.exercise);
-  document.getElementById('ex-weight').value = ex.weight || '';
-  document.getElementById('ex-weight-hsr').value = ex.weightHsr || '';
+  document.getElementById('ex-weight').value = ex.weight != null ? Math.round(ex.weight) : 0;
+  document.getElementById('ex-weight-hsr').value = ex.weightHsr != null ? Math.round(ex.weightHsr) : '';
   ['set1','set2','set3','set4'].forEach((sid,i) => {
     document.getElementById(sid).value = ex.sets[i] != null ? ex.sets[i] : '';
   });
@@ -1269,10 +1269,35 @@ document.getElementById('body-weight-input').addEventListener('change', e => {
   }
 });
 
+// Populate weight selects (0–200 kg, step 1)
+function populateWeightSelect(sel, withEmpty) {
+  sel.innerHTML = '';
+  if (withEmpty) sel.innerHTML = '<option value="">—</option>';
+  for (let w = 0; w <= 200; w++) {
+    const o = document.createElement('option');
+    o.value = w;
+    o.textContent = w + ' kg';
+    sel.appendChild(o);
+  }
+}
+// Populate rep selects (— + 1–30)
+function populateRepSelect(sel) {
+  sel.innerHTML = '<option value="">—</option>';
+  for (let r = 1; r <= 30; r++) {
+    const o = document.createElement('option');
+    o.value = r;
+    o.textContent = r;
+    sel.appendChild(o);
+  }
+}
+populateWeightSelect(document.getElementById('ex-weight'), false);
+populateWeightSelect(document.getElementById('ex-weight-hsr'), true);
+document.querySelectorAll('.set-rep').forEach(populateRepSelect);
+
 // Live tonnage preview in modal
-document.getElementById('ex-weight').addEventListener('input', updateTonnagePreview);
-document.getElementById('ex-weight-hsr').addEventListener('input', updateTonnagePreview);
-document.querySelectorAll('.set-rep').forEach(inp => inp.addEventListener('input', updateTonnagePreview));
+document.getElementById('ex-weight').addEventListener('change', updateTonnagePreview);
+document.getElementById('ex-weight-hsr').addEventListener('change', updateTonnagePreview);
+document.querySelectorAll('.set-rep').forEach(inp => inp.addEventListener('change', updateTonnagePreview));
 
 // Close modal on Escape
 document.addEventListener('keydown', e => {
