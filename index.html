@@ -45,6 +45,7 @@
 html,body{height:100%;overflow:hidden}
 body{
   font-family:'Inter',system-ui,sans-serif;
+  font-size:16px;
   background:var(--bg);color:var(--tx);
   display:flex;flex-direction:column;
 }
@@ -116,7 +117,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   padding:12px 14px;
 }
 .stat-card .label{font-size:11px;font-weight:500;color:var(--tx2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.stat-card .value{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;color:var(--tx)}
+.stat-card .value{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1;color:var(--tx)}
 .stat-card .sub{font-size:11px;color:var(--tx2);margin-top:3px}
 .stat-card .up{color:var(--up)} .stat-card .dn{color:var(--dn)}
 
@@ -145,10 +146,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 #day-tabs::-webkit-scrollbar{display:none}
 .day-tab{
   flex-shrink:0;
-  min-width:40px;height:40px;
+  min-width:46px;height:46px;
   border-radius:10px;
   background:var(--s1);border:1px solid var(--bd);
-  font-size:12px;font-weight:600;color:var(--tx2);
+  font-size:14px;font-weight:600;color:var(--tx2);
   display:flex;align-items:center;justify-content:center;
   position:relative;
   transition:all .15s;
@@ -175,14 +176,14 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   margin-top:2px;
 }
 .ex-card .ex-info{flex:1;min-width:0}
-.ex-card .ex-name{font-size:14px;font-weight:600;line-height:1.2;margin-bottom:4px}
+.ex-card .ex-name{font-size:16px;font-weight:600;line-height:1.2;margin-bottom:6px}
 .ex-card .ex-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.ex-card .ex-weight{font-size:13px;font-weight:700;color:var(--tx)}
+.ex-card .ex-weight{font-size:15px;font-weight:700;color:var(--tx)}
 .ex-card .sets-row{display:flex;gap:5px;align-items:center}
 .ex-card .set-pill{
-  font-size:11px;font-weight:600;
+  font-size:13px;font-weight:600;
   background:var(--s2);border-radius:5px;
-  padding:1px 6px;color:var(--tx2);
+  padding:2px 8px;color:var(--tx2);
   font-variant-numeric:tabular-nums;
 }
 .ex-card .set-pill.s1{background:var(--s3)}
@@ -284,7 +285,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   background:var(--s1);border:1px solid var(--bd);
   margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;
 }
-.lib-exercise .le-name{font-size:14px;font-weight:500}
+.lib-exercise .le-name{font-size:16px;font-weight:500}
 .lib-exercise .le-recs{font-size:12px;color:var(--tx2)}
 
 /* ── Modal ───────────────────────────────────── */
