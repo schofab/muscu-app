@@ -1,6 +1,10 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Layout: full-height flex column — sticky header + bottom nav, scrollable main per tab -->
 <title>Muscu 2026</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#0B0D13">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -388,6 +392,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 </style>
+</head>
+<body>
 
 <!-- ── Top bar ── -->
 <header id="topbar">
@@ -1283,3 +1289,5 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
+</body>
+</html>
