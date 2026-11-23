@@ -334,6 +334,14 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .set-input-wrap{display:flex;flex-direction:column;gap:4px;align-items:center}
 .set-input-wrap span{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em}
 .set-input-wrap input,.set-input-wrap select{text-align:center;padding:8px 4px}
+/* Unilateral grid */
+.sets-grid-uni{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center}
+.uni-side-label{font-size:11px;font-weight:700;color:var(--tx2);text-align:center;text-transform:uppercase;letter-spacing:.04em}
+.set-label-uni{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.uni-tag{font-size:9px;font-weight:700;letter-spacing:.04em;background:var(--s3);color:var(--tx2);padding:1px 5px;border-radius:4px;flex-shrink:0;align-self:center}
+.uni-toggle{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--bd)}
+.uni-btn{flex:1;padding:5px 10px;font-size:11px;font-weight:600;color:var(--tx2);transition:all .15s;white-space:nowrap}
+.uni-btn.active{background:var(--ac);color:#fff}
 .tonnage-preview{
   background:var(--s2);border-radius:10px;padding:10px 14px;
   display:flex;justify-content:space-between;align-items:center;
@@ -515,7 +523,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
       </div>
       <div class="form-group">
         <label>Répétitions par série</label>
-        <div class="sets-grid">
+        <div id="sets-container" class="sets-grid">
           <div class="set-input-wrap"><span>S1</span><select class="set-rep" id="set1"></select></div>
           <div class="set-input-wrap"><span>S2</span><select class="set-rep" id="set2"></select></div>
           <div class="set-input-wrap"><span>S3</span><select class="set-rep" id="set3"></select></div>
@@ -557,6 +565,12 @@ const EXERCISES = {
   'Triceps': ['Magic triceps','Extension poulie','Dips','Extension nuque']
 };
 
+const UNILATERAL_EXERCISES = new Set([
+  'Fentes Bulgares','Leg extension','Dips poulie haute',
+  'Écarté poulie haute','Rowing bûcheron',
+  'Fentes Bulgares buste penché','Mollets debout haltère'
+]);
+
 const HISTORICAL_TONNAGE = {
   2:34663,3:35894,4:38510,5:36499,6:37915,7:39246,8:39050,
   9:36833,10:35273,11:35624,12:35624,13:19525,14:30279,15:32215,
@@ -578,14 +592,10 @@ const SEED_WEEK_38 = {
   bodyWeight: null,
   days: {
     lundi: [
-      {id:'s_l1',group:'Quadriceps',exercise:'Fentes Bulgares',weight:40,sets:[11,9,5,null]},
-      {id:'s_l2',group:'Quadriceps',exercise:'Fentes Bulgares',weight:40,sets:[11,9,5,null]},
-      {id:'s_l3',group:'Quadriceps',exercise:'Leg extension',weight:35,sets:[14,11,7,null]},
-      {id:'s_l4',group:'Quadriceps',exercise:'Leg extension',weight:35,sets:[14,11,0,null]},
-      {id:'s_l5',group:'Pectoraux',exercise:'Dips poulie haute',weight:25,sets:[12,12,8,null]},
-      {id:'s_l6',group:'Pectoraux',exercise:'Dips poulie haute',weight:25,sets:[12,12,8,null]},
-      {id:'s_l7',group:'Pectoraux',exercise:'Écarté poulie haute',weight:17,sets:[12,10,6,null]},
-      {id:'s_l8',group:'Pectoraux',exercise:'Écarté poulie haute',weight:17,sets:[12,10,6,null]},
+      {id:'s_l1',group:'Quadriceps',exercise:'Fentes Bulgares',weight:40,sets:[11,9,5,null],setsR:[11,9,5,null]},
+      {id:'s_l3',group:'Quadriceps',exercise:'Leg extension',weight:35,sets:[14,11,7,null],setsR:[14,11,0,null]},
+      {id:'s_l5',group:'Pectoraux',exercise:'Dips poulie haute',weight:25,sets:[12,12,8,null],setsR:[12,12,8,null]},
+      {id:'s_l7',group:'Pectoraux',exercise:'Écarté poulie haute',weight:17,sets:[12,10,6,null],setsR:[12,10,6,null]},
       {id:'s_l9',group:'Pectoraux',exercise:'Écarté incliné haltères',weight:16,sets:[14,14,8,null]},
       {id:'s_l10',group:'Abdominaux',exercise:'Crunch poulie haute',weight:30,sets:[20,20,12,null]}
     ],
@@ -593,15 +603,13 @@ const SEED_WEEK_38 = {
       {id:'s_m1',group:'Ischio',exercise:'RDL',weight:64,sets:[12,12,12,null]},
       {id:'s_m2',group:'Ischio',exercise:'Leg curl allongé',weight:30,sets:[14,13,12,null]},
       {id:'s_m3',group:'Dorsaux',exercise:'Tirage prise neutre',weight:60,sets:[13,11,10,null]},
-      {id:'s_m4',group:'Dorsaux',exercise:'Rowing bûcheron',weight:22,sets:[9,9,9,null]},
-      {id:'s_m5',group:'Dorsaux',exercise:'Rowing bûcheron',weight:22,sets:[9,9,9,null]},
+      {id:'s_m4',group:'Dorsaux',exercise:'Rowing bûcheron',weight:22,sets:[9,9,9,null],setsR:[9,9,9,null]},
       {id:'s_m6',group:'Trapèzes',exercise:'Kelso shrug',weight:32,sets:[12,12,12,null]},
       {id:'s_m7',group:'Trapèzes',exercise:'Shrug haltères',weight:32,sets:[20,20,20,null]},
       {id:'s_m8',group:'Abdominaux',exercise:'Obliques poulie haute',weight:15,sets:[13,13,13,null]}
     ],
     jeudi: [
-      {id:'s_j1',group:'Fessiers',exercise:'Fentes Bulgares buste penché',weight:36,sets:[10,10,5,null]},
-      {id:'s_j2',group:'Fessiers',exercise:'Fentes Bulgares buste penché',weight:36,sets:[10,10,5,null]},
+      {id:'s_j1',group:'Fessiers',exercise:'Fentes Bulgares buste penché',weight:36,sets:[10,10,5,null],setsR:[10,10,5,null]},
       {id:'s_j3',group:'Épaules',exercise:'Élévations latérales',weight:12,sets:[22,22,8,null]},
       {id:'s_j4',group:'Triceps',exercise:'Extension poulie',weight:17,sets:[17,12,5,null]},
       {id:'s_j5',group:'Biceps',exercise:'Curl incliné',weight:20,sets:[13,13,8,null]},
@@ -619,7 +627,7 @@ const SEED_WEEK_38 = {
       {id:'s_v8',group:'ISOMÉTRIE',exercise:'Gainage Dos',weight:0,sets:[null,null,null,null]},
       {id:'s_v9',group:'ISOMÉTRIE',exercise:'Cou',weight:10,sets:[null,null,null,null]},
       {id:'s_v10',group:'ISOMÉTRIE',exercise:'Mollets',weight:12,sets:[null,null,null,null]},
-      {id:'s_v11',group:'Mollets',exercise:'Mollets debout haltère',weight:12,sets:[13,13,12,null]}
+      {id:'s_v11',group:'Mollets',exercise:'Mollets debout haltère',weight:12,sets:[13,13,12,null],setsR:[13,13,12,null]}
     ]
   }
 };
@@ -635,11 +643,12 @@ function loadData() {
     if (raw) {
       const data = JSON.parse(raw);
       if (!data.exercises) data.exercises = JSON.parse(JSON.stringify(EXERCISES));
+      if (!data.unilateralExercises) data.unilateralExercises = [...UNILATERAL_EXERCISES];
       return data;
     }
   } catch(e) {}
   // Initial seed
-  const data = { weeks: {}, historicalTonnage: {...HISTORICAL_TONNAGE}, historicalWeight: {...HISTORICAL_WEIGHT}, exercises: JSON.parse(JSON.stringify(EXERCISES)) };
+  const data = { weeks: {}, historicalTonnage: {...HISTORICAL_TONNAGE}, historicalWeight: {...HISTORICAL_WEIGHT}, exercises: JSON.parse(JSON.stringify(EXERCISES)), unilateralExercises: [...UNILATERAL_EXERCISES] };
   data.weeks['38'] = JSON.parse(JSON.stringify(SEED_WEEK_38));
   return data;
 }
@@ -656,6 +665,7 @@ let state = {
   libGroup: 'Tous',
   addingToGroup: null,
   addingNewGroup: false,
+  addingMode: 'bilateral',
   modalMode: null, // 'add' | 'edit'
   editId: null,
   selectedGroup: null,
@@ -669,11 +679,17 @@ let state = {
 ═══════════════════════════════════════════════ */
 function uid() { return Math.random().toString(36).slice(2,9); }
 
-function calcTonnage(weight, sets, weightHsr) {
+function isUnilateral(name) {
+  return UNILATERAL_EXERCISES.has(name) || (appData.unilateralExercises || []).includes(name);
+}
+
+function calcTonnage(weight, sets, weightHsr, setsR) {
   if (!weight) return 0;
-  // S1 & S2 use main weight, S3 uses HSR weight (or main if not set), S4 uses HSR weight
   const ws = [weight, weight, weightHsr || weight, weightHsr || weight];
-  return sets.reduce((s, r, i) => s + ws[i] * (Number(r) || 0), 0);
+  return sets.reduce((s, r, i) => {
+    const rR = setsR ? (Number(setsR[i]) || 0) : 0;
+    return s + ws[i] * ((Number(r) || 0) + rR);
+  }, 0);
 }
 
 function getWeekData(w) {
@@ -693,7 +709,7 @@ function getWeekTonnage(w) {
     let total = 0;
     for (const d of DAYS) {
       for (const ex of ((wd.days && wd.days[d]) || [])) {
-        total += calcTonnage(ex.weight, ex.sets, ex.weightHsr);
+        total += calcTonnage(ex.weight, ex.sets, ex.weightHsr, ex.setsR);
       }
     }
     if (total > 0) return total;
@@ -702,7 +718,7 @@ function getWeekTonnage(w) {
 }
 
 function getDayTonnage(w, d) {
-  return getDayExercises(w, d).reduce((s,ex) => s + calcTonnage(ex.weight, ex.sets, ex.weightHsr), 0);
+  return getDayExercises(w, d).reduce((s,ex) => s + calcTonnage(ex.weight, ex.sets, ex.weightHsr, ex.setsR), 0);
 }
 
 function ensureWeek(w) {
@@ -953,7 +969,7 @@ function renderDayTabs() {
 function renderExerciseList() {
   const container = document.getElementById('log-content');
   const exercises = getDayExercises(state.week, state.day);
-  const dayTonnage = exercises.reduce((s,ex) => s + calcTonnage(ex.weight, ex.sets, ex.weightHsr), 0);
+  const dayTonnage = exercises.reduce((s,ex) => s + calcTonnage(ex.weight, ex.sets, ex.weightHsr, ex.setsR), 0);
   const copiedFrom = getWeekData(state.week).copiedFrom;
 
   let html = '';
@@ -972,12 +988,21 @@ function renderExerciseList() {
   } else {
     html += '<div class="exercises-list">';
     exercises.forEach(ex => {
-      const t = calcTonnage(ex.weight, ex.sets, ex.weightHsr);
-      const setsHtml = ex.sets.map((r, i) =>
-        r !== null && r !== undefined
-          ? `<span class="set-pill${i===0?' s1':''}">${r}</span>`
-          : ''
-      ).join('');
+      const t = calcTonnage(ex.weight, ex.sets, ex.weightHsr, ex.setsR);
+      const setsHtml = ex.setsR
+        ? ex.sets.map((r, i) => {
+            const rR = ex.setsR[i];
+            if (r !== null && r !== undefined) {
+              const rStr = rR !== null && rR !== undefined ? `${r}G / ${rR}D` : `${r}G`;
+              return `<span class="set-pill${i===0?' s1':''}">${rStr}</span>`;
+            }
+            return '';
+          }).join('')
+        : ex.sets.map((r, i) =>
+            r !== null && r !== undefined
+              ? `<span class="set-pill${i===0?' s1':''}">${r}</span>`
+              : ''
+          ).join('');
 
       html += `<div class="ex-card" data-id="${ex.id}" onclick="openEditModal('${ex.id}')" role="button" tabindex="0">
         <div class="chip chip-${ex.group}">${ex.group}</div>
@@ -1042,16 +1067,26 @@ function renderLibrary() {
         <div class="lib-exercise">
           <span class="le-name">${ex}</span>
           <div style="display:flex;align-items:center;gap:8px">
+            ${isUnilateral(ex) ? '<span class="uni-tag">UNILAT</span>' : ''}
             <span class="le-recs">${group === 'ISOMÉTRIE' ? 'isométrie' : '3-4 × 10-20'}</span>
             <button class="lib-del-btn" onclick="deleteLibExercise('${group}','${ex.replace(/'/g,"\\'")}')">✕</button>
           </div>
         </div>
       `).join('')}
       ${isAdding ? `
-        <div class="lib-add-row">
-          <input id="lib-new-ex-input" type="text" placeholder="Nom de l'exercice" autocomplete="off">
-          <button class="lib-confirm-btn" onclick="confirmAddExercise('${group}')">✓</button>
-          <button class="lib-cancel-btn" onclick="cancelAddExercise()">✕</button>
+        <div class="lib-add-row" style="flex-direction:column;align-items:stretch;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="lib-new-ex-input" type="text" placeholder="Nom de l'exercice" autocomplete="off" style="flex:1">
+            <button class="lib-confirm-btn" onclick="confirmAddExercise('${group}')">✓</button>
+            <button class="lib-cancel-btn" onclick="cancelAddExercise()">✕</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--tx2);font-weight:500">Type :</span>
+            <div class="uni-toggle">
+              <button class="uni-btn${state.addingMode==='bilateral'?' active':''}" onclick="setAddingMode('bilateral')">Bilatéral</button>
+              <button class="uni-btn${state.addingMode==='unilateral'?' active':''}" onclick="setAddingMode('unilateral')">Unilatéral</button>
+            </div>
+          </div>
         </div>
       ` : ''}
     </div>`;
@@ -1095,6 +1130,11 @@ function cancelAddExercise() {
   renderLibrary();
 }
 
+function setAddingMode(mode) {
+  state.addingMode = mode;
+  renderLibrary();
+}
+
 function confirmAddExercise(group) {
   const inp = document.getElementById('lib-new-ex-input');
   const name = inp ? inp.value.trim() : '';
@@ -1102,9 +1142,14 @@ function confirmAddExercise(group) {
   if (!appData.exercises[group]) appData.exercises[group] = [];
   if (!appData.exercises[group].includes(name)) {
     appData.exercises[group].push(name);
+    if (state.addingMode === 'unilateral') {
+      if (!appData.unilateralExercises) appData.unilateralExercises = [];
+      if (!appData.unilateralExercises.includes(name)) appData.unilateralExercises.push(name);
+    }
     saveData();
   }
   state.addingToGroup = null;
+  state.addingMode = 'bilateral';
   renderLibrary();
 }
 
@@ -1135,6 +1180,31 @@ function confirmAddGroup() {
 /* ═══════════════════════════════════════════════
    MODAL
 ═══════════════════════════════════════════════ */
+function updateSetsGrid(isUni) {
+  const container = document.getElementById('sets-container');
+  if (isUni) {
+    container.className = 'sets-grid-uni';
+    let html = '<span></span><span class="uni-side-label">G</span><span class="uni-side-label">D</span>';
+    for (let i = 1; i <= 4; i++) {
+      html += `<span class="set-label-uni">S${i}</span>` +
+              `<select class="set-rep" id="set${i}"></select>` +
+              `<select class="set-repR" id="set${i}r"></select>`;
+    }
+    container.innerHTML = html;
+  } else {
+    container.className = 'sets-grid';
+    let html = '';
+    for (let i = 1; i <= 4; i++) {
+      html += `<div class="set-input-wrap"><span>S${i}</span><select class="set-rep" id="set${i}"></select></div>`;
+    }
+    container.innerHTML = html;
+  }
+  container.querySelectorAll('select').forEach(sel => {
+    populateRepSelect(sel);
+    sel.addEventListener('change', updateTonnagePreview);
+  });
+}
+
 function openAddModal() {
   state.modalMode = 'add';
   state.editId = null;
@@ -1143,7 +1213,7 @@ function openAddModal() {
   document.getElementById('ex-selector').innerHTML = '<option value="">— Choisir un groupe d\'abord —</option>';
   document.getElementById('ex-weight').value = 0;
   document.getElementById('ex-weight-hsr').value = '';
-  ['set1','set2','set3','set4'].forEach(id => document.getElementById(id).value = '');
+  updateSetsGrid(false);
   updateTonnagePreview();
   renderGroupSelector();
   document.getElementById('modal-overlay').hidden = false;
@@ -1161,9 +1231,17 @@ function openEditModal(id) {
   populateExerciseSelect(ex.group, ex.exercise);
   document.getElementById('ex-weight').value = ex.weight != null ? Math.round(ex.weight) : 0;
   document.getElementById('ex-weight-hsr').value = ex.weightHsr != null ? Math.round(ex.weightHsr) : '';
+  const uni = isUnilateral(ex.exercise);
+  updateSetsGrid(uni);
   ['set1','set2','set3','set4'].forEach((sid,i) => {
     document.getElementById(sid).value = ex.sets[i] != null ? ex.sets[i] : '';
   });
+  if (uni && ex.setsR) {
+    ['set1r','set2r','set3r','set4r'].forEach((sid,i) => {
+      const el = document.getElementById(sid);
+      if (el) el.value = ex.setsR[i] != null ? ex.setsR[i] : '';
+    });
+  }
   updateTonnagePreview();
   document.getElementById('modal-overlay').hidden = false;
 }
@@ -1208,15 +1286,25 @@ function saveExercise() {
     return;
   }
 
+  const uni = isUnilateral(exercise);
+  const setsR = uni ? ['set1r','set2r','set3r','set4r'].map(id => {
+    const el = document.getElementById(id);
+    const v = el ? el.value : '';
+    return v !== '' ? parseInt(v) : null;
+  }) : null;
+
   const wd = ensureWeek(state.week);
   if (!wd.days) wd.days = {};
   if (!wd.days[state.day]) wd.days[state.day] = [];
 
+  const entry = { id: state.modalMode === 'add' ? uid() : state.editId, group, exercise, weight, weightHsr, sets };
+  if (setsR) entry.setsR = setsR;
+
   if (state.modalMode === 'add') {
-    wd.days[state.day].push({ id: uid(), group, exercise, weight, weightHsr, sets });
+    wd.days[state.day].push(entry);
   } else {
     const idx = wd.days[state.day].findIndex(e => e.id === state.editId);
-    if (idx >= 0) wd.days[state.day][idx] = { id: state.editId, group, exercise, weight, weightHsr, sets };
+    if (idx >= 0) wd.days[state.day][idx] = entry;
   }
 
   saveData();
@@ -1242,7 +1330,13 @@ function updateTonnagePreview() {
     const v = document.getElementById(id).value;
     return v !== '' ? parseInt(v) : null;
   });
-  const t = calcTonnage(weight, sets, weightHsr);
+  const setsR = ['set1r','set2r','set3r','set4r'].map(id => {
+    const el = document.getElementById(id);
+    const v = el ? el.value : '';
+    return v !== '' ? parseInt(v) : null;
+  });
+  const hasR = setsR.some(r => r !== null);
+  const t = calcTonnage(weight, sets, weightHsr, hasR ? setsR : null);
   document.getElementById('tonnage-preview-val').textContent = t > 0 ? fmt(t) + ' kg' : '0 kg';
 }
 
@@ -1332,6 +1426,10 @@ document.querySelectorAll('.set-rep').forEach(populateRepSelect);
 document.getElementById('ex-weight').addEventListener('change', updateTonnagePreview);
 document.getElementById('ex-weight-hsr').addEventListener('change', updateTonnagePreview);
 document.querySelectorAll('.set-rep').forEach(inp => inp.addEventListener('change', updateTonnagePreview));
+document.getElementById('ex-selector').addEventListener('change', function() {
+  if (this.value) updateSetsGrid(isUnilateral(this.value));
+  updateTonnagePreview();
+});
 
 // Close modal on Escape
 document.addEventListener('keydown', e => {
