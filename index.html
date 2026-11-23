@@ -657,10 +657,14 @@ function saveData() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch(e) {}
 }
 
+const WEEK_KEY = 'muscu2026_week';
+function saveWeek(w) { try { localStorage.setItem(WEEK_KEY, String(w)); } catch(e) {} }
+function loadWeek() { try { const v = parseInt(localStorage.getItem(WEEK_KEY)); return (v >= 1 && v <= 52) ? v : 38; } catch(e) { return 38; } }
+
 let appData = loadData();
 let state = {
   tab: 'dashboard',
-  week: 38,
+  week: loadWeek(),
   day: 'lundi',
   libGroup: 'Tous',
   addingToGroup: null,
@@ -678,6 +682,13 @@ let state = {
    HELPERS
 ═══════════════════════════════════════════════ */
 function uid() { return Math.random().toString(36).slice(2,9); }
+
+// Sets a select value reliably (works on hidden elements in iOS Safari)
+function setSelectValue(sel, val) {
+  for (let i = 0; i < sel.options.length; i++) {
+    sel.options[i].selected = sel.options[i].value === val;
+  }
+}
 
 function isUnilateral(name) {
   return UNILATERAL_EXERCISES.has(name) || (appData.unilateralExercises || []).includes(name);
@@ -1229,17 +1240,18 @@ function openEditModal(id) {
   document.getElementById('modal-title').textContent = 'Modifier l\'exercice';
   renderGroupSelector();
   populateExerciseSelect(ex.group, ex.exercise);
-  document.getElementById('ex-weight').value = ex.weight != null ? Math.round(ex.weight) : 0;
-  document.getElementById('ex-weight-hsr').value = ex.weightHsr != null ? Math.round(ex.weightHsr) : '';
+  setSelectValue(document.getElementById('ex-weight'), ex.weight != null ? String(Math.round(ex.weight)) : '0');
+  setSelectValue(document.getElementById('ex-weight-hsr'), ex.weightHsr != null ? String(Math.round(ex.weightHsr)) : '');
   const uni = isUnilateral(ex.exercise);
   updateSetsGrid(uni);
   ['set1','set2','set3','set4'].forEach((sid,i) => {
-    document.getElementById(sid).value = ex.sets[i] != null ? ex.sets[i] : '';
+    const el = document.getElementById(sid);
+    if (el) setSelectValue(el, ex.sets[i] != null ? String(ex.sets[i]) : '');
   });
   if (uni && ex.setsR) {
     ['set1r','set2r','set3r','set4r'].forEach((sid,i) => {
       const el = document.getElementById(sid);
-      if (el) el.value = ex.setsR[i] != null ? ex.setsR[i] : '';
+      if (el) setSelectValue(el, ex.setsR[i] != null ? String(ex.setsR[i]) : '');
     });
   }
   updateTonnagePreview();
@@ -1358,10 +1370,10 @@ function switchTab(tab) {
    EVENTS
 ═══════════════════════════════════════════════ */
 document.getElementById('week-prev').onclick = () => {
-  if (state.week > 1) { state.week--; onWeekChange(); }
+  if (state.week > 1) { state.week--; saveWeek(state.week); onWeekChange(); }
 };
 document.getElementById('week-next').onclick = () => {
-  if (state.week < 52) { state.week++; onWeekChange(); }
+  if (state.week < 52) { state.week++; saveWeek(state.week); onWeekChange(); }
 };
 
 function onWeekChange() {
