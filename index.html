@@ -127,7 +127,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   padding:14px;
 }
 .chart-wrap{position:relative;height:160px}
+.chart-wrap-lg{position:relative;height:220px}
 .chart-card h3{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.chart-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.chart-header h3{margin:0}
+.chart-header select{flex-shrink:0;font-size:11px;padding:4px 8px;border-radius:8px;max-width:160px;height:28px;width:auto}
 
 /* ── Weight track ────────────────────────────── */
 .weight-row{
@@ -457,6 +461,19 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
       <h3>Répartition cette semaine</h3>
       <div class="chart-wrap"><canvas id="chart-days"></canvas></div>
     </div>
+
+    <div class="chart-card">
+      <h3>Charge par groupe — sem. courante</h3>
+      <div class="chart-wrap chart-wrap-lg"><canvas id="chart-groups"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Progression exercice</h3>
+        <select id="ex-prog-selector" onchange="switchExercise(this.value)"></select>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-exercise"></canvas></div>
+    </div>
   </div>
 
   <!-- LOG -->
@@ -676,6 +693,9 @@ let state = {
   chartTonnage: null,
   chartWeight: null,
   chartDays: null,
+  chartGroup: null,
+  chartExercise: null,
+  selectedExercise: null,
 };
 
 /* ═══════════════════════════════════════════════
@@ -810,6 +830,9 @@ function renderDashboard() {
   renderTonnageChart();
   renderWeightChart();
   renderDaysChart();
+  renderGroupChart();
+  if (!state.selectedExercise) populateExerciseProgSelector();
+  renderExerciseChart();
 }
 
 function getChartColors() {
@@ -950,6 +973,140 @@ function renderDaysChart() {
     data: {
       labels,
       datasets: [{ data: values, backgroundColor: values.map(v => v > 0 ? c.ac : c.s3), borderRadius: 4, borderSkipped: false }]
+    },
+    options: opts
+  });
+}
+
+const GROUP_COLORS = {
+  'Abdominaux':'#A78BFA','Avant-Bras':'#94A3B8','Biceps':'#34D399',
+  'Dorsaux':'#60A5FA','Épaules':'#FBBF24','Fessiers':'#C084FC',
+  'Ischio':'#818CF8','ISOMÉTRIE':'#6B7280','Mollets':'#4ADE80',
+  'Pectoraux':'#FB923C','Quadriceps':'#38BDF8','Trapèzes':'#22D3EE',
+  'Triceps':'#F472B6',
+};
+
+function getGroupTonnage(w) {
+  const wd = getWeekData(w);
+  const groups = {};
+  for (const day of DAYS) {
+    for (const ex of ((wd.days && wd.days[day]) || [])) {
+      groups[ex.group] = (groups[ex.group] || 0) + calcTonnage(ex.weight, ex.sets, ex.weightHsr, ex.setsR);
+    }
+  }
+  return groups;
+}
+
+function getExerciseProgression(name) {
+  const result = [];
+  const maxW = Math.max(...Object.keys(HISTORICAL_TONNAGE).map(Number), state.week);
+  for (let i = 1; i <= maxW; i++) {
+    const wd = appData.weeks[String(i)];
+    if (!wd || !wd.days) continue;
+    let t = 0;
+    for (const day of DAYS) {
+      for (const ex of (wd.days[day] || [])) {
+        if (ex.exercise === name) t += calcTonnage(ex.weight, ex.sets, ex.weightHsr, ex.setsR);
+      }
+    }
+    if (t > 0) result.push({ week: i, tonnage: t });
+  }
+  return result;
+}
+
+function renderGroupChart() {
+  const ctx = document.getElementById('chart-groups').getContext('2d');
+  const c = getChartColors();
+  const groups = getGroupTonnage(state.week);
+  const sorted = Object.entries(groups).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  const labels = sorted.map(([g]) => g);
+  const values = sorted.map(([,v]) => v);
+  const colors = sorted.map(([g]) => GROUP_COLORS[g] || c.ac);
+
+  if (state.chartGroup) {
+    state.chartGroup.data.labels = labels;
+    state.chartGroup.data.datasets[0].data = values;
+    state.chartGroup.data.datasets[0].backgroundColor = colors;
+    state.chartGroup.update('none');
+    return;
+  }
+
+  state.chartGroup = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: colors, borderRadius: 4, borderSkipped: false }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1A1E2B', titleColor: '#E8EBF5', bodyColor: '#8891AB',
+          borderColor: '#2A2F45', borderWidth: 1, padding: 10, cornerRadius: 8,
+          callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString('fr-FR') + ' kg' }
+        }
+      },
+      scales: {
+        x: { grid:{color:c.s3,lineWidth:1}, ticks:{color:c.tx2,font:{size:10},callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}, border:{display:false} },
+        y: { grid:{display:false}, ticks:{color:c.tx2,font:{size:10}}, border:{display:false} }
+      }
+    }
+  });
+}
+
+function populateExerciseProgSelector() {
+  const sel = document.getElementById('ex-prog-selector');
+  const all = Object.values(appData.exercises).flat().filter(e=>e).sort((a,b)=>a.localeCompare(b,'fr'));
+  sel.innerHTML = all.map(e => `<option value="${e}"${e===state.selectedExercise?' selected':''}>${e}</option>`).join('');
+  if (!state.selectedExercise && all.length) state.selectedExercise = all[0];
+}
+
+function switchExercise(name) {
+  state.selectedExercise = name;
+  if (state.chartExercise) { state.chartExercise.destroy(); state.chartExercise = null; }
+  renderExerciseChart();
+}
+
+function renderExerciseChart() {
+  if (!state.selectedExercise) return;
+  const prog = getExerciseProgression(state.selectedExercise);
+  const labels = prog.map(p => 'S' + p.week);
+  const values = prog.map(p => p.tonnage);
+  const ctx = document.getElementById('chart-exercise').getContext('2d');
+  const c = getChartColors();
+
+  if (state.chartExercise) {
+    state.chartExercise.data.labels = labels;
+    state.chartExercise.data.datasets[0].data = values;
+    state.chartExercise.update('none');
+    return;
+  }
+
+  const opts = chartBaseOptions(c, v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v);
+  opts.plugins.tooltip.callbacks = { label: ctx => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' kg tonnage' };
+  if (labels.length > 0) {
+    opts.scales.x.ticks = { color:c.tx2, font:{size:10}, maxRotation:0,
+      callback: function(val,i){ return i%4===0?this.getLabelForValue(val):''; }
+    };
+  }
+
+  state.chartExercise = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: c.ac,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: c.ac,
+        pointBorderColor: '#0B0D13',
+        pointBorderWidth: 1.5,
+        tension: 0.3,
+      }]
     },
     options: opts
   });
